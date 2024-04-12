@@ -10,25 +10,23 @@ help:
 compile = ../ligo compile contract  --project-root ./src ./src/$(1) -o ./compiled/$(2) $(3) 
 # ^ Compile contracts to Michelson or Micheline
 
-test = ../ligo run test $(project_root) ./test/$(1)
+test = ../ligo run test $(project_root) ./test/$(1) --no-warn 
 # ^ run given test file
 
 
 .PHONY: test compile
 compile: ## compile contracts to Michelson
 	@mkdir -p compiled
-	@$(call compile,counter.mligo,counter.tz, -m C)
-	@$(call compile,exo_1.mligo,exo_1.tz, -m C)
-	@$(call compile,exo_2.mligo,exo_2.tz, -m C)
-	@$(call compile,exo_2.mligo,exo_2.mligo.json, -m C --michelson-format json)
+	@$(call compile,Vesting.mligo,Vesting.tz, -m C)
+	@$(call compile,Vesting.mligo,Vesting.mligo.json, -m C --michelson-format json)
+	@$(call compile,Vesting.mligo,Vesting.tz.json, -m C --michelson-format json)
+	@$(call compile, extendable_single_asset.impl.mligo, single_asset.tz, -m C)
+
 
 
 test: ## run tests (SUITE=asset_approve make test)
 ifndef SUITE
-	@$(call test,counter.test.mligo)
-	@$(call test,exo_1.test.mligo)
-	@$(call test,exo_2.test.mligo)
-
+	@$(call test,Vesting.test.mligo)
 else
 	@$(call test,$(SUITE).test.mligo)
 endif

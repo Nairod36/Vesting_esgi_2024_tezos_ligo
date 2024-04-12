@@ -1,17 +1,16 @@
 {
-    "name": "deploy-esgi-exercices",
-    "version": "1.0.0",
-    "description": "",
-    "scripts": {
-      "deploy_exo2": "tsc && node exo_2_deploy.js"
-    },
-    "dependencies": {
-      "@taquito/signer": "^19.0.0",
-      "@taquito/taquito": "^19.0.0",
-      "@taquito/utils": "^19.0.0"
-    },
-    "devDependencies": {
-      "typescript": "^5.2.2"
-    }
+  "name": "deploy-esgi-exercices",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "deploy_exo2": "tsc && node exo_2_deploy.js"
+  },
+  "dependencies": {
+    "@taquito/signer": "^19.0.0",
+    "@taquito/taquito": "^19.0.0",
+    "@taquito/utils": "^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
 }
-  

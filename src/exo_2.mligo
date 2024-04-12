@@ -10,7 +10,6 @@ module C = struct
     let not_admin = "Not admin"
   end
 
-  // Two entrypoints
   [@entry] let increment (delta : int) (store : storage) : result = [],{ store with value = store.value + delta }
   [@entry] let decrement (delta : int) (store : storage) : result = [],{ store with value = store.value - delta }
   [@entry] let reset () (store : storage) : result = 

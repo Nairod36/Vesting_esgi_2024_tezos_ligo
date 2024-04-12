@@ -2,6 +2,7 @@
 #import "./helper/assert.mligo" "Assert"
 
 #import "../src/exo_2.mligo" "MyContract"
+#import "../src/callCounter.mligo" "CallContract"
 
 // type param = MyContract.C parameter_of
 
@@ -53,3 +54,28 @@ let test_exo_2_increment_many =
   let () = Assert.tx_success r in
   let current_storage = Test.get_storage addr in
   assert(current_storage.value = 57)
+
+let test_call_increment =
+  let (owner, _, _, _, _, _, _) = Bootstrap.boot_accounts() in
+  
+  (* Originate the first contract *)
+  let myContract_storage = {value = 0; admin = owner} in
+  let origination_result_myContract = Test.originate (contract_of MyContract.C) myContract_storage 0tez in
+  let myContract_addr = origination_result_myContract.addr in
+  
+  (* Originate the second contract *)
+  let callContract_storage = {value = 42; admin = owner} in
+  let origination_result_callContract = Test.originate (contract_of CallContract.C) callContract_storage 0tez in
+  let callContract_addr = origination_result_callContract.addr in
+
+  (* Call the increment function of the first contract via the second contract *)
+  let delta = 5 in
+  let _ = Test.transfer callContract_addr (Call_increment (delta, Test.to_address(myContract_addr))) 0tez in
+  
+  (* Check the storage of the first contract *)
+  let current_storage = Test.get_storage myContract_addr in
+  assert (current_storage.value = 5)
+
+
+
+

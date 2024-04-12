@@ -12,12 +12,12 @@ async function main() {
   //set alice key
   Tezos.setProvider({
     signer: await InMemorySigner.fromSecretKey(
-      "edskS7YYeT85SiRZEHPFjDpCAzCuUaMwYFi39cWPfguovTuNqxU3U9hXo7LocuJmr7hxkesUFkmDJh26ubQGehwXY8YiGXYCvU"
+      "edskS6fJx41BJvzZYhjzmYhMTDcT5g4TSC1R8sLtapUdoNnkxECfG79myoT2qBXJJYhTLPW6skzFfXUmKa1ABKH1ETQDP4SiM3"
     ),
   });
 
   const initialStorage = {
-    admin : "tz1TiFzFCcwjv4pyYGTrnncqgq17p59CzAE2",
+    admin : "tz1eEG8zDbkQr9r7vnsCGS8meXxqt7JXoDRb",
     value : "42" 
   };
 
