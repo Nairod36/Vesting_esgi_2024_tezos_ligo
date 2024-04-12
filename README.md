@@ -1,26 +1,37 @@
-# LIGO exercices (cameligo)
+# LIGO Vesting (cameligo)
 
 ## Introduction
 
-The goal is to learn good practices of coding smart contract in cameligo. This also includes writing tests using the Test framework provided with the LIGO compiler.
+The Vesting contract can be used task related to fund distribution (ICO, corporate actions).
 
-This repository is intended to propose small simple exercices and also to provide a solution for them.
 
 ## Makefile
 
 If you have cloned this repo, you can use the makefile to easily compile contract with `make compile` or run tests `make test` or run tests on a single exercice `make test SUITE=exo_1_solution`
 
-Your starting point is the exo_1
 ```
-make test SUITE=exo_1
+src/Vesting.mligo
 ```
 
 ## Exercices
 
-| Exercice          | Name          | Difficulty | Solution                                                                     |   |   |
-|-------------------|---------------|------------|------------------------------------------------------------------------------|---|---|
-| [exo 1](exo_1.md) | Counter       | XS         | [contract](lib/exo_1_solution.mligo), [test](test/exo_1_solution.test.mligo)  |   |   |
-| [exo 2](exo_2.md) | Counter++     | S          | [contract](lib/exo_2_solution.mligo), [test](test/exo_2_solution.test.mligo)  |   |   |
-| [exo 3](exo_3.md) | Vote          | M          | [contract](lib/exo_3_solution.mligo), [test](test/exo_3_solution.test.mligo)  |   |   |
-| [exo 4](exo_4.md) | SimpleToken   | M          | [contract](lib/exo_4_solution.mligo), [test](test/exo_4_solution.test.mligo)  |   |   |
-| [exo 5](exo_5.md) | SimpleToken++ | S          |                                                                              |   |   |
+Create a smart contract (called Vesting) that distributes funds to beneficiaries on a period of time.
+Funds are implemented as a FA2 token (TZIP-12).
+Funds are first frozen during a freeze period (i.e. funds cannot be claimed). Then funds are available (i.e.
+claimable) on time basis. During the vesting period, funds are claimable proportionnaly to the vesting period
+duration. At the end of the vesting period, 100% of funds are claimable.
+The administrator of the Vesting contract is the user who deployed the Vesting contract.
+The administrator can call the `Start` entrypoint which will trigger the beginning of the freeze period and the
+lock of funds (i.e. fund transfer from administrator to the Vesting contract) . Once the Vesting contract is
+started, the beneficiaries cannot be changed, and vesting start time and end time cannot be changed.
+The beneficiaries are specified at the creation of the contract, with their corresponding promised amounts of
+token.
+An entrypoint `UpdateBeneficiary` must be provided to modify the beneficiaries. This entrypoint must be
+callable only by the administrator if the Vesting contract is not started yet.
+The vesting duration, and freeze period duration are specified at the creation of the contract.
+The FA2 token (address and token_id) that is used to represent funds must be specified at the creation of
+the contract.
+Available funds can be claimed by a beneficiary. The `claim` entrypoint transfers available amount of tokens
+(and which has not been claimed yet) to the beneficiary.
+A `kill` entrypoint callable only by the administrator must be implemented to be able to retrieve funds, and
+pay beneficiaries (on time elpased basis) and to clean the storage. 
