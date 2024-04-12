@@ -3,11 +3,34 @@
 ## Introduction
 
 The Vesting contract can be used task related to fund distribution (ICO, corporate actions).
+Ce projet contient un contrat de Vesting (tokens verrouillés) ainsi que ses tests.
 
+## Auteurs
+- Dorian Moulin
 
 ## Makefile
 
 If you have cloned this repo, you can use the makefile to easily compile contract with `make compile` or run tests `make test` or run tests on a single exercice `make test SUITE=exo_1_solution`
+
+## Compilation
+Pour compiler ce projet, vous aurez besoin d'utiliser le compilateur Ligo. La compilation transforme le code source de votre contrat en un format que la blockchain peut exécuter. Suivez les étapes ci-dessous pour compiler le projet :
+
+```bash
+make compile
+```
+
+## Déploiement
+
+Pour déployer le contrat sur la blockchain, suivez les étapes ci-dessous. Assurez-vous que toutes les configurations préalables sont correctement établies et que vous avez compilé le contrat comme indiqué dans la section précédente.
+
+1. **Préparation :** Avant de procéder au déploiement, vérifiez que vous avez bien défini toutes les variables d'environnement nécessaires, y compris `PRIVATE_KEY` et `PUBLIC_KEY`. Ces clés sont cruciales pour l'authentification et la sécurisation de votre déploiement.
+
+2. **Lancement du déploiement :** Pour déployer votre contrat de vesting, exécutez la commande suivante dans votre terminal :
+
+```bash
+make deploy
+```
+
 
 ```
 src/Vesting.mligo
