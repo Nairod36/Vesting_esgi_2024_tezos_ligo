@@ -13,7 +13,7 @@ type beneficiary_detail = {
   claimed_amount: nat;   // Amount already claimed by the beneficiary
 }
 
-type extension = {
+type storage = {
   beneficiaries: (address, beneficiary_detail) big_map; // Beneficiary details
   admin: address;            // Admin of the contract
   fa2_token_address: address; // Address of the FA2 token contract
@@ -21,8 +21,6 @@ type extension = {
   vesting_config: vesting_config; // Vesting configuration details
   is_started: bool;          // Flag to check if vesting has started
 }
-
-type storage = extension VestingFA2.storage
 
 module Errors = struct
   let not_admin = "Not admin"
@@ -36,38 +34,52 @@ end
 
 type ret = operation list * storage
 
+let add_seconds (timestamp: timestamp) (duration: int) : timestamp =
+  timestamp + duration
 
 // Initial setup for contract. Called once by the admin to start the vesting period
 [@entry]
 let start (s : storage) : ret =
-  let sender = Tezos.get_sender() in
-  if sender <> s.extension.admin then
-    failwith Errors.not_admin
-  else if s.extension.is_started then
-    failwith Errors.contract_already_started
+  let sender_option = Tezos.get_sender() in
+match sender_option with
+| None -> failwith Errors.sender_not_found
+| Some(sender_address) ->
+  if sender_address = s.admin then
+    if s.is_started then
+      failwith Errors.contract_already_started
+    else
+      let now = Tezos.get_now() in
+      let new_start_time = add_seconds(now, s.vesting_config.freeze_duration) in
+      let updated_storage = {
+        s with
+        vesting_config = {s.vesting_config with start_time = new_start_time},
+        is_started = true
+      } in
+      ([], updated_storage)
   else
-    let now = Tezos.get_now() in
-      let new_start_time = now + s.extension.vesting_config.freeze_duration in
-      let updated_vesting_config = {s.extension.vesting_config with start_time = new_start_time} in
-      let updated_extension = {s.extension with vesting_config = updated_vesting_config; is_started = true} in
-      ([], {s with extension = updated_extension})
+    failwith Errors.not_admin
+
+
+
+
+
 
 // Allows the admin to update beneficiary details before the vesting has started
 [@entry]
 let updateBeneficiary (beneficiary: address * beneficiary_detail) (s : storage) : ret =
-  let sender = Tezos.get_sender() in
-  if s.extension.is_started then
+  if s.is_started then
     failwith Errors.contract_already_started
-  else if sender <> s.extension.admin then
-    failwith Errors.not_admin
   else
-    let (beneficiary_address, detail) = beneficiary in
-    let updated_beneficiaries = Big_map.update beneficiary_address (Some(detail)) s.extension.beneficiaries in
-    let updated_extension = {s.extension with beneficiaries = updated_beneficiaries} in
-    let updated_storage = {s with extension = updated_extension} in
-    ([], updated_storage)
-
-
+    match Tezos.get_sender() with
+    | Some(admin_address) ->
+      if admin_address = s.admin then
+        let (beneficiary_address, detail) = beneficiary in
+        let updated_beneficiaries = Big_map.update beneficiary_address (Some(detail)) s.beneficiaries in
+        ([], {s with beneficiaries = updated_beneficiaries})
+      else
+        failwith Errors.not_admin
+    | None ->
+      failwith Errors.sender_not_found
 
 [@entry]
 let transfer (param: VestingFA2.TZIP12.transfer) (s: storage) : ret =
@@ -75,48 +87,42 @@ let transfer (param: VestingFA2.TZIP12.transfer) (s: storage) : ret =
 
 // Allows beneficiaries to claim their available tokens based on the vesting schedule
 [@entry]
-let claim (s : extension) : ret =
-  let sender_option = Tezos.get_sender() in
-  let addr =
-    if Option.is_some sender_option then
-      Option.unopt sender_option (failwith Errors.sender_not_found)
-    else
-      failwith Errors.sender_not_found
-  in
-  let detail_option = Big_map.find_opt addr s.beneficiaries in
-  let detail =
-    if Option.is_some detail_option then
-      Option.unopt detail_option (failwith Errors.not_a_beneficiary)
-    else
-      failwith Errors.not_a_beneficiary
-  in
-  let now = Tezos.get_now() in
-  let freeze_end_time = s.vesting_config.start_time + s.vesting_config.freeze_duration in
-  if now < freeze_end_time then
-    failwith Errors.probatory_period_not_completed
-  else
-    let vesting_end_time = s.vesting_config.start_time + s.vesting_config.vesting_duration in
-    let time_since_freeze_end = now - freeze_end_time in
-    let vested_amount_during_period = (detail.promised_amount * time_since_freeze_end) / s.vesting_config.vesting_duration in
-    let claimable_amount =
-      if now > vesting_end_time then
-        detail.promised_amount - detail.claimed_amount
+let claim (s : storage) : ret =
+  match Tezos.get_sender() with
+  | None -> failwith Errors.sender_not_found
+  | Some(addr) -> (
+    match Big_map.find_opt addr s.beneficiaries with
+    | None -> failwith Errors.not_a_beneficiary
+    | Some(detail) -> (
+      let now = Tezos.get_now() in
+      let freeze_end_time = add_seconds(s.vesting_config.start_time, s.vesting_config.freeze_duration) in
+      if now < freeze_end_time then
+        failwith Errors.probatory_period_not_completed
       else
-        vested_amount_during_period - detail.claimed_amount
-    in
-    if claimable_amount <= 0n then
-      failwith Errors.no_tokens_to_claim
-    else
-      let transfer_ops = [{from_=s.admin; txs=[{to_=addr; token_id=s.token_id; amount=claimable_amount}]}] in
-      let transfer_contract = VestingFA2.get_transfer_contract s.fa2_token_address in
-      let op = Tezos.transaction transfer_ops 0mutez transfer_contract in
-      let updated_detail = {detail with claimed_amount = detail.claimed_amount + claimable_amount} in
-      let updated_beneficiaries = Big_map.update addr (Some(updated_detail)) s.beneficiaries in
-      ([op], {s with beneficiaries = updated_beneficiaries})
+        let vesting_end_time = add_seconds(s.vesting_config.start_time, s.vesting_config.vesting_duration) in
+        let claimable_amount =
+          if now > vesting_end_time then
+            detail.promised_amount - detail.claimed_amount  // All remaining tokens are claimable
+          else
+            let time_since_freeze_end = now - freeze_end_time in
+            let vested_amount_during_period = detail.promised_amount * time_since_freeze_end / s.vesting_config.vesting_duration in
+            vested_amount_during_period - detail.claimed_amount in
+        if claimable_amount <= 0n then
+          failwith Errors.no_tokens_to_claim
+        else (
+          let transfer_ops = [{from_=s.admin; txs=[{to_=addr; token_id=s.token_id; amount=claimable_amount}]}] in
+          let transfer = VestingFA2.get_transfer_contract s.fa2_token_address in
+          let op = Tezos.transaction transfer_ops 0mutez transfer in
+          let updated_detail = {detail with claimed_amount = detail.claimed_amount + claimable_amount} in
+          let updated_beneficiaries = Big_map.update addr (Some(updated_detail)) s.beneficiaries in
+          ([op], {s with beneficiaries = updated_beneficiaries})
+        )
+      )
+    )
 
 // Allows the admin to retrieve unclaimed funds after vesting period is over and clean up the contract storage
 [@entry]
-let kill (s : extension) : ret =
+let kill (s : storage) : ret =
   match Tezos.get_sender() with
   | None -> failwith Errors.sender_not_found
   | Some(admin_address) ->
@@ -139,3 +145,5 @@ let kill (s : extension) : ret =
         ) [] s.beneficiaries in
         (operations, {s with beneficiaries = Big_map.empty; is_started = false})
       )
+
+
