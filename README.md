@@ -10,7 +10,7 @@ Ce projet contient un contrat de Vesting (tokens verrouillés) ainsi que ses tes
 
 ## Makefile
 
-If you have cloned this repo, you can use the makefile to easily compile contract with `make compile` or run tests `make test` or run tests on a single exercice `make test SUITE=exo_1_solution`
+If you have cloned this repo, you can use the makefile to easily compile contract with `make compile`
 
 ## Compilation
 Pour compiler ce projet, vous aurez besoin d'utiliser le compilateur Ligo. La compilation transforme le code source de votre contrat en un format que la blockchain peut exécuter. Suivez les étapes ci-dessous pour compiler le projet :
