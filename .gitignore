@@ -1,3 +1,4 @@
+.env
 .ligo
 compiled
 deploy/node_modules
