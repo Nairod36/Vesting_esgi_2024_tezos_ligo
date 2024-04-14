@@ -9,15 +9,15 @@
   }
 
   type beneficiary_detail = {
-    promised_amount: nat;  // Total tokens promised to the beneficiary
-    claimed_amount: nat;   // Amount already claimed by the beneficiary
+    promised_amount: nat;  
+    claimed_amount: nat; 
   }
 
   type extension = {
     beneficiaries: (address, beneficiary_detail) big_map; // Beneficiary details
     admin: address;            // Admin of the contract
-    fa2_token_address: address; // Address of the FA2 token contract
-    token_id: nat;             // Token ID of the FA2 token
+    fa2_token_address: address; 
+    token_id: nat;             
     vesting_config: vesting_config; // Vesting configuration details
     is_started: bool;          // Flag to check if vesting has started
   }
@@ -45,7 +45,6 @@
           failwith "Unsupported entrypoint"
 
 
-  // Initial setup for contract. Called once by the admin to start the vesting period
   [@entry] let startVesting () (s : storage) : ret =
     let sender = Tezos.get_sender() in
     if sender <> s.extension.admin then
@@ -60,7 +59,6 @@
       ([], {s with extension = updated_extension})
 
 
-  // Allows the admin to update beneficiary details before the vesting has started
   [@entry] let updateBeneficiary (beneficiary: address * beneficiary_detail) (s : storage) : ret =
     let sender = Tezos.get_sender() in
     if s.extension.is_started then
@@ -79,7 +77,6 @@
   [@entry] let transfer (param: VestingFA2.TZIP12.transfer) (s: storage) : ret =
     VestingFA2.transfer param s
 
-  // Allows beneficiaries to claim their available tokens based on the vesting schedule
   [@entry] let claim () (s : storage) : ret =
     let sender = Tezos.get_sender() in
     match Big_map.find_opt sender s.extension.beneficiaries with
@@ -155,3 +152,5 @@ let kill (beneficiary_address : address) (storage : storage) : ret =
           ([transfer_op], { storage with extension = { storage.extension with beneficiaries = updated_beneficiaries; is_started = false } })
         else
           ([], storage)
+
+
