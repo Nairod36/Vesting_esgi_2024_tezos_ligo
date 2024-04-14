@@ -121,34 +121,37 @@
           ([transfer_op], {s with extension = updated_extension})
 
 [@entry]
-let kill () (storage : storage) : ret =
-  let now = Tezos.get_now () in
-  let end_time = storage.extension.vesting_config.start_time + (86400 * storage.extension.vesting_config.freeze_duration) in
-  if now < end_time then
-    failwith Errors.vesting_period_not_completed
+let kill (beneficiary_address : address) (storage : storage) : ret =
+  let sender = Tezos.get_sender () in
+  if sender <> storage.extension.admin then
+    failwith Errors.not_admin 
   else
-    match Big_map.find_opt storage.extension.admin storage.extension.beneficiaries with
-    | None -> failwith Errors.not_a_beneficiary
-    | Some(details) ->
-      let total_vesting_time = end_time - storage.extension.vesting_config.start_time in
-      let elapsed_time = now - storage.extension.vesting_config.start_time in
-      let vested_tokens =
-        if now >= end_time then
-          details.promised_amount
-        else
-          let progress = (details.promised_amount * elapsed_time) / total_vesting_time in
+    let now = Tezos.get_now () in
+    let end_freeze_time = storage.extension.vesting_config.start_time + (86400 * storage.extension.vesting_config.freeze_duration) in
+    if now < end_freeze_time then
+      failwith Errors.vesting_period_not_completed
+    else
+      match Big_map.find_opt beneficiary_address storage.extension.beneficiaries with
+      | None -> failwith Errors.not_a_beneficiary
+      | Some(details) ->
+        let elapsed_time = now - storage.extension.vesting_config.start_time in
+        let total_vesting_time = storage.extension.vesting_config.vesting_duration in
+        let vested_tokens =
+          if now >= storage.extension.vesting_config.start_time + total_vesting_time then
+            details.promised_amount
+          else
+           let progress = (details.promised_amount * elapsed_time) / total_vesting_time in
           abs progress in  
-      let to_claim =  (vested_tokens - details.claimed_amount) in  
-      if  to_claim > 0 then
-        let transfer_param = {
-          from_ = storage.extension.admin;
-          txs = [{ to_ = storage.extension.admin; token_id = storage.extension.token_id; amount = to_claim}]
-        } in
-        let transfer_entrypoint = get_entrypoint(storage.extension.fa2_token_address, "transfer") in
-        let transfer_op = Tezos.transaction transfer_param 0mutez transfer_entrypoint in
-        let updated_details = { details with claimed_amount = vested_tokens } in
-        let updated_beneficiaries = Big_map.update storage.extension.admin (Some updated_details) storage.extension.beneficiaries in
-        ([transfer_op], { storage with extension = { storage.extension with beneficiaries = updated_beneficiaries; is_started = false } })
-      else
-        let cleaned_beneficiaries = Big_map.update storage.extension.admin None storage.extension.beneficiaries in
-        ([], { storage with extension = { storage.extension with beneficiaries = cleaned_beneficiaries; is_started = false } })
+          let to_claim =  (vested_tokens - details.claimed_amount) in  
+        if to_claim > 0 then
+          let transfer_param = {
+            from_ = Tezos.get_self_address ();
+            txs = [{ to_ = beneficiary_address; token_id = storage.extension.token_id; amount = to_claim }]
+          } in
+          let transfer_entrypoint = get_entrypoint (storage.extension.fa2_token_address, "transfer") in
+          let transfer_op = Tezos.transaction transfer_param 0mutez transfer_entrypoint in
+          let updated_details = { details with claimed_amount = vested_tokens } in
+          let updated_beneficiaries = Big_map.update beneficiary_address (Some updated_details) storage.extension.beneficiaries in
+          ([transfer_op], { storage with extension = { storage.extension with beneficiaries = updated_beneficiaries; is_started = false } })
+        else
+          ([], storage)

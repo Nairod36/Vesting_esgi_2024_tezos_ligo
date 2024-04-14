@@ -8,7 +8,8 @@
   "dependencies": {
     "@taquito/signer": "^19.0.0",
     "@taquito/taquito": "^19.0.0",
-    "@taquito/utils": "^19.0.0"
+    "@taquito/utils": "^19.0.0",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "typescript": "^5.2.2"

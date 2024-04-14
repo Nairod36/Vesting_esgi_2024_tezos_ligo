@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -14,18 +37,26 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const signer_1 = require("@taquito/signer");
 const taquito_1 = require("@taquito/taquito");
+const dotenv = __importStar(require("dotenv"));
 const exo_2_mligo_json_1 = __importDefault(require("../compiled/exo_2.mligo.json"));
-const RPC_ENDPOINT = "https://ghostnet.tezos.marigold.dev";
+const RPC_ENDPOINT = "http://ghostnet.tezos.marigold.dev";
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const Tezos = new taquito_1.TezosToolkit(RPC_ENDPOINT);
-        //set alice key
+        dotenv.config();
+        const SECRET_KEY = process.env.SECRET_KEY || "";
+        const ADMIN_ADDRESS = process.env.ADMIN_ADDRESS || "";
         Tezos.setProvider({
-            signer: yield signer_1.InMemorySigner.fromSecretKey("edskS6fJx41BJvzZYhjzmYhMTDcT5g4TSC1R8sLtapUdoNnkxECfG79myoT2qBXJJYhTLPW6skzFfXUmKa1ABKH1ETQDP4SiM3"),
+            signer: yield signer_1.InMemorySigner.fromSecretKey(SECRET_KEY),
         });
         const initialStorage = {
-            admin: "tz1eEG8zDbkQr9r7vnsCGS8meXxqt7JXoDRb",
-            value: "42"
+            admin: ADMIN_ADDRESS,
+            value: "42",
+            ledger: new Map([]),
+            metadata: new Map([]),
+            operators: new Map([]),
+            token_metadata: new Map([]),
+            total_supply: 10000,
         };
         try {
             const originated = yield Tezos.contract.originate({
