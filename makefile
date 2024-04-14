@@ -11,18 +11,15 @@ compile = ../ligo compile contract  --project-root ./src ./src/$(1) -o ./compile
 # ^ Compile contracts to Michelson or Micheline
 
 test = ../ligo run test $(project_root) ./test/$(1) --no-warn 
-# ^ run given test file
+# ^ run given test file	
 
 
 .PHONY: test compile
 compile: ## compile contracts to Michelson
 	@mkdir -p compiled
-	@$(call compile,Vesting.mligo,Vesting.tz, -m C)
-	@$(call compile,Vesting.mligo,Vesting.mligo.json, -m C --michelson-format json)
-	@$(call compile,Vesting.mligo,Vesting.tz.json, -m C --michelson-format json)
-	@$(call compile, extendable_single_asset.impl.mligo, single_asset.tz, -m C)
-
-
+	@$(call compile,Vesting.mligo,Vesting.mligo.json, --michelson-format json)
+	@$(call compile,Vesting.mligo,Vesting.tz.json, --michelson-format json)
+	
 
 test: ## run tests (SUITE=asset_approve make test)
 ifndef SUITE
